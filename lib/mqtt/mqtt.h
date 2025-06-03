@@ -7,9 +7,9 @@
 #include "lwip/altcp_tls.h"         // Biblioteca que fornece funções e recursos para conexões seguras usando TLS:
 #include <dht.h>
 
-#define MQTT_SERVER "192.168.62.3"  // Substitua pelo endereço do host - broket MQTT: Ex: 192.168.1.107
-#define MQTT_USERNAME "LUCAS"       // Substitua pelo nome da host MQTT - Username
-#define MQTT_PASSWORD "3301"        // Substitua pelo Password da host MQTT - credencial de acesso - caso exista
+#define MQTT_SERVER ""  // Substitua pelo endereço do host - broket MQTT: Ex: 192.168.1.107
+#define MQTT_USERNAME ""       // Substitua pelo nome da host MQTT - Username
+#define MQTT_PASSWORD ""        // Substitua pelo Password da host MQTT - credencial de acesso - caso exista
 
 #ifndef MQTT_SERVER
 #error Need to define MQTT_SERVER
