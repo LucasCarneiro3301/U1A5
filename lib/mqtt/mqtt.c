@@ -5,7 +5,7 @@
 #include "pico/unique_id.h"         // Biblioteca com recursos para trabalhar com os pinos GPIO do Raspberry Pi Pico
 
 
-async_at_time_worker_t temperature_worker = { .do_work = worker_fn };
+async_at_time_worker_t temp_and_humid_worker = { .do_work = worker_fn };
 
 //Topico MQTT
 static const char *full_topic(MQTT_CLIENT_DATA_T *state, const char *name) {
@@ -85,7 +85,7 @@ static void control_led(MQTT_CLIENT_DATA_T *state, bool on) {
 }
 
 // Publicar temperatura
-static void publish_temperature(MQTT_CLIENT_DATA_T *state) {
+static void publish_temp_and_humid(MQTT_CLIENT_DATA_T *state) {
     float temperature, humidity;
 
     const char *temperature_key = full_topic(state, "/temperature");
@@ -184,7 +184,7 @@ void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len) {
 // Publicar temperatura
 void worker_fn(async_context_t *context, async_at_time_worker_t *worker) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)worker->user_data;
-    publish_temperature(state);
+    publish_temp_and_humid(state);
     async_context_add_at_time_worker_in_ms(context, worker, TEMP_WORKER_TIME_S * 1000);
 }
 
@@ -201,8 +201,8 @@ void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status
         }
 
         // Publish temperature every 10 sec if it's changed
-        temperature_worker.user_data = state;
-        async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &temperature_worker, 0);
+        temp_and_humid_worker.user_data = state;
+        async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &temp_and_humid_worker, 0);
     } else if (status == MQTT_CONNECT_DISCONNECTED) {
         if (!state->connect_done) {
             panic("Failed to connect to mqtt server");

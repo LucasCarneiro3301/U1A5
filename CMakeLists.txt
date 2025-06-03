@@ -12,7 +12,7 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(mqtt_client C CXX ASM)
+project(U1A5 C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
@@ -21,17 +21,17 @@ add_subdirectory(lib/dht)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(mqtt_client mqtt_client.c lib/cyw43/cyw43.c lib/mqtt/mqtt.c)
+add_executable(U1A5 U1A5.c lib/cyw43/cyw43.c lib/mqtt/mqtt.c)
 
-pico_set_program_name(mqtt_client "mqtt_client")
-pico_set_program_version(mqtt_client "0.1")
+pico_set_program_name(U1A5 "U1A5")
+pico_set_program_version(U1A5 "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(mqtt_client 0)
-pico_enable_stdio_usb(mqtt_client 1)
+pico_enable_stdio_uart(U1A5 0)
+pico_enable_stdio_usb(U1A5 1)
 
 # Add the standard library to the build
-target_link_libraries(mqtt_client
+target_link_libraries(U1A5
     pico_stdlib
     hardware_adc
     dht
@@ -42,14 +42,14 @@ target_link_libraries(mqtt_client
     )
 
 # Add the standard include files to the build
-target_include_directories(mqtt_client PRIVATE
+target_include_directories(U1A5 PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
 # Add any user requested libraries
-target_link_libraries(mqtt_client 
+target_link_libraries(U1A5 
         
         )
 
-pico_add_extra_outputs(mqtt_client)
+pico_add_extra_outputs(U1A5)
 
