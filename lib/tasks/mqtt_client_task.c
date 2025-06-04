@@ -98,7 +98,7 @@ static void control(MQTT_CLIENT_DATA_T *state, bool on) {
     else
         stop = false;
 
-    mqtt_publish(state->mqtt_client_inst, full_topic(state, "/led/state"), message, strlen(message), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+    mqtt_publish(state->mqtt_client_inst, full_topic(state, "/control/state"), message, strlen(message), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
 }
 
 // Publicar temperatura
@@ -174,10 +174,7 @@ static void unsub_request_cb(void *arg, err_t err) {
 // Tópicos de assinatura
 static void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub) {
     mqtt_request_cb_t cb = sub ? sub_request_cb : unsub_request_cb;
-    mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/led"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
-    mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/print"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
-    mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/ping"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
-    mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/exit"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
+    mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/control"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
 }
 
 // Dados de entrada MQTT
@@ -192,21 +189,12 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
     state->len = len;
     state->data[len] = '\0';
 
-    if (strcmp(basic_topic, "/led") == 0)
+    if (strcmp(basic_topic, "/control") == 0)
     {
         if (lwip_stricmp((const char *)state->data, "On") == 0 || strcmp((const char *)state->data, "1") == 0)
             control(state, true);
         else if (lwip_stricmp((const char *)state->data, "Off") == 0 || strcmp((const char *)state->data, "0") == 0)
             control(state, false);
-    } else if (strcmp(basic_topic, "/print") == 0) {
-        printf("%.*s\n", len, data);
-    } else if (strcmp(basic_topic, "/ping") == 0) {
-        char buf[11];
-        snprintf(buf, sizeof(buf), "%u", to_ms_since_boot(get_absolute_time()) / 1000);
-        mqtt_publish(state->mqtt_client_inst, full_topic(state, "/uptime"), buf, strlen(buf), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
-    } else if (strcmp(basic_topic, "/exit") == 0) {
-        state->stop_client = true; // stop the client when ALL subscriptions are stopped
-        sub_unsub_topics(state, false); // unsubscribe
     }
 }
 
