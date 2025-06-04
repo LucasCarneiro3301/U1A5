@@ -102,22 +102,27 @@ static void control_led(MQTT_CLIENT_DATA_T *state, bool on) {
 }
 
 // Publicar temperatura
-static void publish_temp_and_humid(MQTT_CLIENT_DATA_T *state) {
+static void publish_temp_humid_and_lux(MQTT_CLIENT_DATA_T *state) {
     const char *temperature_key = full_topic(state, "/temperature");
     const char *humidity_key = full_topic(state, "/humidity");
+    const char *lux_key = full_topic(state, "/luminosity");
 
     if(result!=DHT_RESULT_OK)
         return;
 
-    char temp_str[16], hum_str[16];
+    char temp_str[16], hum_str[16], lux_str[16];
     snprintf(temp_str, sizeof(temp_str), "%.2f", temperature);
     snprintf(hum_str, sizeof(hum_str), "%.2f", humidity);
+    snprintf(lux_str, sizeof(lux_str), "%.2f", lux);
 
     printf("Publishing %s to %s\n", temp_str, temperature_key);
     mqtt_publish(state->mqtt_client_inst, temperature_key, temp_str, strlen(temp_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
 
     printf("Publishing %s to %s\n", hum_str, humidity_key);
     mqtt_publish(state->mqtt_client_inst, humidity_key, hum_str, strlen(hum_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+
+    printf("Publishing %s to %s\n", hum_str, lux_key);
+    mqtt_publish(state->mqtt_client_inst, lux_key, lux_str, strlen(lux_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
 }
 
 // Requisição para publicar
@@ -199,7 +204,7 @@ static void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len
 // Publicar temperatura
 static void worker_fn(async_context_t *context, async_at_time_worker_t *worker) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)worker->user_data;
-    publish_temp_and_humid(state);
+    publish_temp_humid_and_lux(state);
     async_context_add_at_time_worker_in_ms(context, worker, TEMP_WORKER_TIME_S * 1000);
 }
 

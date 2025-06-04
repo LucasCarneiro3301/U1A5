@@ -20,7 +20,7 @@ void vTaskLDR(void *params)
 
         printf("RLDR: %f\n", rldr);
 
-        lux = 63 * pow(rldr, -0.7);
+        lux = 12500 * pow(rldr, -0.7);  // Empiricamente
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
