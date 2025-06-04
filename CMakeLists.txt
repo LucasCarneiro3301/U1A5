@@ -1,17 +1,4 @@
-# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
-if(WIN32)
-    set(USERHOME $ENV{USERPROFILE})
-else()
-    set(USERHOME $ENV{HOME})
-endif()
-set(sdkVersion 2.1.1)
-set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.1.1)
-set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
-if (EXISTS ${picoVscode})
-    include(${picoVscode})
-endif()
-# ====================================================================================
+
 
 
 
@@ -50,7 +37,7 @@ add_executable(U1A5
     lib/tasks/mqtt_client_task.c
     lib/tasks/actuators_task.c
     lib/tasks/gmf_values.c
-    lib/tasks/led_task.c
+    lib/tasks/status_task.c
 )
 
 pico_set_program_name(U1A5 "U1A5")

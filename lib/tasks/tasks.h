@@ -35,13 +35,12 @@ enum Notes {
     LA_BAIXO = 880
 };
 
-
 void vTaskDisplay(void *params);
 void vTaskDHT(void *params);
 void vTaskMQTTClient(void *params);
 void vTaskLDR(void *params);
 void vTaskGMF(void *params);
 void vTaskActuator(void *params);
-void vTaskLED(void *params);
+void vTaskStatus(void *params);
 
 #endif

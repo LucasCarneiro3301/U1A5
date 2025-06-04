@@ -58,7 +58,7 @@ int main(void) {
     xTaskCreate(vTaskMQTTClient, "MQTT Client Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);    // Cliente MQTT
     xTaskCreate(vTaskActuator, "Actuators Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);        // Aciona os atuadores
     xTaskCreate(vTaskGMF, "GMF Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // Função de pertinência gaussiana nos valores
-    xTaskCreate(vTaskLED, "LED Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // LEDs de status
+    xTaskCreate(vTaskStatus, "STATUS Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);             // Status
 
     vTaskStartScheduler();
     panic_unsupported();

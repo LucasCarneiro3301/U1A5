@@ -91,12 +91,12 @@ void mqtt_setup(MQTT_CLIENT_DATA_T* state) {
 }
 
 // Controle do LED 
-static void control_led(MQTT_CLIENT_DATA_T *state, bool on) {
+static void control(MQTT_CLIENT_DATA_T *state, bool on) {
     const char* message = on ? "On" : "Off";
     if (on)
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
+        stop = true;
     else
-        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+        stop = false;
 
     mqtt_publish(state->mqtt_client_inst, full_topic(state, "/led/state"), message, strlen(message), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
 }
@@ -106,23 +106,38 @@ static void publish_temp_humid_and_lux(MQTT_CLIENT_DATA_T *state) {
     const char *temperature_key = full_topic(state, "/temperature");
     const char *humidity_key = full_topic(state, "/humidity");
     const char *lux_key = full_topic(state, "/luminosity");
+    const char *quality_key = full_topic(state, "/quality");
+    const char *status_key = full_topic(state, "/status");
 
     if(result!=DHT_RESULT_OK)
         return;
 
-    char temp_str[16], hum_str[16], lux_str[16];
-    snprintf(temp_str, sizeof(temp_str), "%.2f", temperature);
-    snprintf(hum_str, sizeof(hum_str), "%.2f", humidity);
-    snprintf(lux_str, sizeof(lux_str), "%.2f", lux);
+    char stt_str[16];
+    snprintf(stt_str, sizeof(stt_str), (!stop)?"ATIVO":"PARADO");
 
-    printf("Publishing %s to %s\n", temp_str, temperature_key);
-    mqtt_publish(state->mqtt_client_inst, temperature_key, temp_str, strlen(temp_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+    printf("Publishing %s to %s\n", stt_str, status_key);
+    mqtt_publish(state->mqtt_client_inst, status_key, stt_str, strlen(stt_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
 
-    printf("Publishing %s to %s\n", hum_str, humidity_key);
-    mqtt_publish(state->mqtt_client_inst, humidity_key, hum_str, strlen(hum_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+    if(!stop) {
+        bool status = ((quality >= 0.8) ? 0b010 : (quality < 0.8 && quality >= 0.5) ? 0b110 : 0b100);
+        char temp_str[16], hum_str[16], lux_str[16], qlt_str[16];
+        snprintf(temp_str, sizeof(temp_str), "%.2f", temperature);
+        snprintf(hum_str, sizeof(hum_str), "%.2f", humidity);
+        snprintf(lux_str, sizeof(lux_str), "%.2f", lux);
+        snprintf(qlt_str, sizeof(qlt_str), (quality ==1)?"IDEAL":(quality >= 0.8)?"OTIMO":(quality >= 0.7)?"BOM":(quality >= 0.5)?"MEDIOCRE":"RUIM");
 
-    printf("Publishing %s to %s\n", hum_str, lux_key);
-    mqtt_publish(state->mqtt_client_inst, lux_key, lux_str, strlen(lux_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+        printf("Publishing %s to %s\n", temp_str, temperature_key);
+        mqtt_publish(state->mqtt_client_inst, temperature_key, temp_str, strlen(temp_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+
+        printf("Publishing %s to %s\n", hum_str, humidity_key);
+        mqtt_publish(state->mqtt_client_inst, humidity_key, hum_str, strlen(hum_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+
+        printf("Publishing %s to %s\n", lux_str, lux_key);
+        mqtt_publish(state->mqtt_client_inst, lux_key, lux_str, strlen(lux_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+
+        printf("Publishing %s to %s\n", qlt_str, quality_key);
+        mqtt_publish(state->mqtt_client_inst, quality_key, qlt_str, strlen(qlt_str), MQTT_PUBLISH_QOS, MQTT_PUBLISH_RETAIN, pub_request_cb, state);
+    }
 }
 
 // Requisição para publicar
@@ -180,9 +195,9 @@ static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t f
     if (strcmp(basic_topic, "/led") == 0)
     {
         if (lwip_stricmp((const char *)state->data, "On") == 0 || strcmp((const char *)state->data, "1") == 0)
-            control_led(state, true);
+            control(state, true);
         else if (lwip_stricmp((const char *)state->data, "Off") == 0 || strcmp((const char *)state->data, "0") == 0)
-            control_led(state, false);
+            control(state, false);
     } else if (strcmp(basic_topic, "/print") == 0) {
         printf("%.*s\n", len, data);
     } else if (strcmp(basic_topic, "/ping") == 0) {
