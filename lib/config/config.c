@@ -55,8 +55,7 @@ void ssd1306_setup(ssd1306_t* ssd) {
 // Inicializa e configura os pinos do joystick como periféricos ADC
 void adc_setup() {
     adc_init();
-    adc_gpio_init(LM35);
-    adc_gpio_init(JOY_X);
+    adc_gpio_init(LDR);
 }
 
 void pwm_setup() {
@@ -94,4 +93,5 @@ void init(/*PIO pio, uint sm,*/  ssd1306_t* ssd) {
     output_setup();
     i2c_setup();
     ssd1306_setup(ssd);
+    adc_setup();
 }

@@ -1,3 +1,17 @@
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
 
 
 
@@ -11,11 +25,15 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+set(FREERTOS_KERNEL_PATH "D:/FreeRTOS-Kernel")
+include(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
 
 project(U1A5 C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
+
+include_directories(${CMAKE_SOURCE_DIR}/lib)
 
 add_subdirectory(lib/dht)
 
@@ -23,10 +41,13 @@ add_subdirectory(lib/dht)
 
 add_executable(U1A5 
     U1A5.c 
-    lib/cyw43/cyw43.c 
-    lib/mqtt/mqtt.c
+    lib/cyw43/cyw43.c
     lib/config/config.c
     lib/ssd1306/ssd1306.c
+    lib/tasks/dht_task.c
+    lib/tasks/ldr_task.c
+    lib/tasks/display_task.c
+    lib/tasks/mqtt_client_task.c
 )
 
 pico_set_program_name(U1A5 "U1A5")
@@ -47,6 +68,8 @@ target_link_libraries(U1A5
     pico_lwip_mqtt
     pico_mbedtls
     pico_lwip_mbedtls
+    FreeRTOS-Kernel 
+    FreeRTOS-Kernel-Heap4
     )
 
 # Add the standard include files to the build

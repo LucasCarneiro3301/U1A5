@@ -26,7 +26,7 @@
 #define JOY_Y 26 			// Eixo Y do joystick 
 #define JOY_X 27 			// Eixo X do joystick 
 #define WS2812_PIN 7    	// Matriz de LEDs 5x5
-#define LM35 28				// Sensor LM35
+#define LDR 28				// Sensor LM35
 
 #define FAN_IN1 16
 #define FAN_IN2 17

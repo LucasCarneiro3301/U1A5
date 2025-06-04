@@ -1,24 +1,46 @@
-#include "mqtt.h"
-#include "pico/stdlib.h"            
-#include "pico/cyw43_arch.h"        // Biblioteca para arquitetura Wi-Fi da Pico com CYW43 
-#include "hardware/adc.h"           // Biblioteca de hardware para conversão ADC
+#include "tasks.h"
 #include "pico/unique_id.h"         // Biblioteca com recursos para trabalhar com os pinos GPIO do Raspberry Pi Pico
+#include "../cyw43/cyw43.h"
+#include "../mqtt/mqtt.h"
 
-float temperature, humidity;
+static void pub_request_cb(__unused void *arg, err_t err);                                          // Requisição para publicar
+static void sub_request_cb(void *arg, err_t err);                                                   // Requisição de Assinatura - subscribe        
+static void unsub_request_cb(void *arg, err_t err);                                                 // Requisição para encerrar a assinatura
+static void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub);                                  // Tópicos de assinatura
+static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags);              // Dados de entrada MQTT
+static void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len);                  // Dados de entrada publicados
+static void worker_fn(async_context_t *context, async_at_time_worker_t *worker);                    // Publicar temperatura
+static void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status);  // Conexão MQTT
+static void start_client(MQTT_CLIENT_DATA_T *state);                                                // Inicializar o cliente MQTT
+static void dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg);                    // Call back com o resultado do DNS
+static const char *full_topic(MQTT_CLIENT_DATA_T *state, const char *name);                          // Tópico MQTT
+void mqtt_setup(MQTT_CLIENT_DATA_T* state);
 
 async_at_time_worker_t temp_and_humid_worker = { .do_work = worker_fn };
 
-//Topico MQTT
-static const char *full_topic(MQTT_CLIENT_DATA_T *state, const char *name) {
-#if MQTT_UNIQUE_TOPIC
-    char full_topic[MQTT_TOPIC_LEN];
-    snprintf(full_topic, sizeof(full_topic), "/%s%s", state->mqtt_client_info.client_id, name);
-    return full_topic;
-#else
-    return name;
-#endif
-}
+void vTaskMQTTClient(void *params)
+{
+    static MQTT_CLIENT_DATA_T state;    // Cria registro com os dados do cliente
 
+    mqtt_setup(&state);
+
+    //Faz um pedido de DNS para o endereço IP do servidor MQTT
+    cyw43_arch_lwip_begin();
+    int err = dns_gethostbyname(MQTT_SERVER, &state.mqtt_server_address, dns_found, &state);
+    cyw43_arch_lwip_end();
+
+    // Se tiver o endereço, inicia o cliente
+    if (err == ERR_OK) {
+        start_client(&state);
+    } else if (err != ERR_INPROGRESS) { // ERR_INPROGRESS means expect a callback
+        panic("dns request failed");
+    }
+
+    while (!state.connect_done || mqtt_client_is_connected(state.mqtt_client_inst)) {
+        cyw43_arch_poll();
+        cyw43_arch_wait_for_work_until(make_timeout_time_ms(10000));
+    }
+}
 
 void mqtt_setup(MQTT_CLIENT_DATA_T* state) {
     char unique_id_buf[5];
@@ -68,12 +90,6 @@ void mqtt_setup(MQTT_CLIENT_DATA_T* state) {
 #endif
 }
 
-static dht_result_t read_dht11_temp(float *humidity, float *temperature) {
-    dht_start_measurement(&dht);
-
-    return dht_finish_measurement_blocking(&dht, humidity, temperature);
-}
-
 // Controle do LED 
 static void control_led(MQTT_CLIENT_DATA_T *state, bool on) {
     const char* message = on ? "On" : "Off";
@@ -90,7 +106,7 @@ static void publish_temp_and_humid(MQTT_CLIENT_DATA_T *state) {
     const char *temperature_key = full_topic(state, "/temperature");
     const char *humidity_key = full_topic(state, "/humidity");
 
-    if(read_dht11_temp(&humidity, &temperature)!=DHT_RESULT_OK)
+    if(result!=DHT_RESULT_OK)
         return;
 
     char temp_str[16], hum_str[16];
@@ -105,14 +121,14 @@ static void publish_temp_and_humid(MQTT_CLIENT_DATA_T *state) {
 }
 
 // Requisição para publicar
-void pub_request_cb(__unused void *arg, err_t err) {
+static void pub_request_cb(__unused void *arg, err_t err) {
     if (err != 0) {
         printf("pub_request_cb failed %d", err);
     }
 }
 
 // Requisição de Assinatura - subscribe
-void sub_request_cb(void *arg, err_t err) {
+static void sub_request_cb(void *arg, err_t err) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)arg;
     if (err != 0) {
         panic("subscribe request failed %d", err);
@@ -121,7 +137,7 @@ void sub_request_cb(void *arg, err_t err) {
 }
 
 // Requisição para encerrar a assinatura
-void unsub_request_cb(void *arg, err_t err) {
+static void unsub_request_cb(void *arg, err_t err) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)arg;
     if (err != 0) {
         panic("unsubscribe request failed %d", err);
@@ -136,7 +152,7 @@ void unsub_request_cb(void *arg, err_t err) {
 }
 
 // Tópicos de assinatura
-void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub) {
+static void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub) {
     mqtt_request_cb_t cb = sub ? sub_request_cb : unsub_request_cb;
     mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/led"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
     mqtt_sub_unsub(state->mqtt_client_inst, full_topic(state, "/print"), MQTT_SUBSCRIBE_QOS, cb, state, sub);
@@ -145,7 +161,7 @@ void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub) {
 }
 
 // Dados de entrada MQTT
-void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+static void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)arg;
 #if MQTT_UNIQUE_TOPIC
     const char *basic_topic = state->topic + strlen(state->mqtt_client_info.client_id) + 1;
@@ -175,31 +191,29 @@ void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
 }
 
 // Dados de entrada publicados
-void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len) {
+static void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)arg;
     strncpy(state->topic, topic, sizeof(state->topic));
 }
 
 // Publicar temperatura
-void worker_fn(async_context_t *context, async_at_time_worker_t *worker) {
+static void worker_fn(async_context_t *context, async_at_time_worker_t *worker) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)worker->user_data;
     publish_temp_and_humid(state);
     async_context_add_at_time_worker_in_ms(context, worker, TEMP_WORKER_TIME_S * 1000);
 }
 
 // Conexão MQTT
-void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
+static void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
     MQTT_CLIENT_DATA_T* state = (MQTT_CLIENT_DATA_T*)arg;
     if (status == MQTT_CONNECT_ACCEPTED) {
         state->connect_done = true;
-        sub_unsub_topics(state, true); // subscribe;
+        sub_unsub_topics(state, true);
 
-        // indicate online
         if (state->mqtt_client_info.will_topic) {
             mqtt_publish(state->mqtt_client_inst, state->mqtt_client_info.will_topic, "1", 1, MQTT_WILL_QOS, true, pub_request_cb, state);
         }
 
-        // Publish temperature every 10 sec if it's changed
         temp_and_humid_worker.user_data = state;
         async_context_add_at_time_worker_in_ms(cyw43_arch_async_context(), &temp_and_humid_worker, 0);
     } else if (status == MQTT_CONNECT_DISCONNECTED) {
@@ -250,4 +264,15 @@ void dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg) {
     } else {
         panic("dns request failed");
     }
+}
+
+//Topico MQTT
+static const char *full_topic(MQTT_CLIENT_DATA_T *state, const char *name) {
+#if MQTT_UNIQUE_TOPIC
+    char full_topic[MQTT_TOPIC_LEN];
+    snprintf(full_topic, sizeof(full_topic), "/%s%s", state->mqtt_client_info.client_id, name);
+    return full_topic;
+#else
+    return name;
+#endif
 }

@@ -7,9 +7,9 @@
 #include "lwip/altcp_tls.h"         // Biblioteca que fornece funções e recursos para conexões seguras usando TLS:
 #include <dht.h>
 
-#define MQTT_SERVER ""  // Substitua pelo endereço do host - broket MQTT: Ex: 192.168.1.107
-#define MQTT_USERNAME ""       // Substitua pelo nome da host MQTT - Username
-#define MQTT_PASSWORD ""        // Substitua pelo Password da host MQTT - credencial de acesso - caso exista
+#define MQTT_SERVER "192.168.62.3"  // Substitua pelo endereço do host - broket MQTT: Ex: 192.168.1.107
+#define MQTT_USERNAME "LUCAS"       // Substitua pelo nome da host MQTT - Username
+#define MQTT_PASSWORD "3301"        // Substitua pelo Password da host MQTT - credencial de acesso - caso exista
 
 #ifndef MQTT_SERVER
 #error Need to define MQTT_SERVER
@@ -70,23 +70,7 @@ typedef struct {
     bool stop_client;
 } MQTT_CLIENT_DATA_T;
 
-extern dht_t dht;
-extern float temperature;
-extern float humidity;
-
 #include "mqtt.h"
 #include "pico/async_context.h"
-
-void mqtt_setup(MQTT_CLIENT_DATA_T* state);
-void pub_request_cb(__unused void *arg, err_t err);                                          // Requisição para publicar
-void sub_request_cb(void *arg, err_t err);                                                   // Requisição de Assinatura - subscribe        
-void unsub_request_cb(void *arg, err_t err);                                                 // Requisição para encerrar a assinatura
-void sub_unsub_topics(MQTT_CLIENT_DATA_T* state, bool sub);                                  // Tópicos de assinatura
-void mqtt_incoming_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags);              // Dados de entrada MQTT
-void mqtt_incoming_publish_cb(void *arg, const char *topic, u32_t tot_len);                  // Dados de entrada publicados
-void worker_fn(async_context_t *context, async_at_time_worker_t *worker);                    // Publicar temperatura
-void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status);  // Conexão MQTT
-void start_client(MQTT_CLIENT_DATA_T *state);                                                // Inicializar o cliente MQTT
-void dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg);                    // Call back com o resultado do DNS
 
 #endif
