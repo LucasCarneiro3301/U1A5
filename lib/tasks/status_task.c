@@ -19,7 +19,7 @@ void vTaskStatus(void *params)
     int status;
     while (true)
     {
-        status = !stop*((quality >= 0.8) ? 0b010 : (quality < 0.8 && quality >= 0.5) ? 0b110 : 0b100);
+        status = !stop*((quality >= 0.7) ? 0b010 : (quality < 0.7 && quality >= 0.5) ? 0b110 : 0b100);
 
         gpio_put(RED, (status >> 2) & 1);
         gpio_put(GREEN, (status >> 1) & 1);
