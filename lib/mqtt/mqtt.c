@@ -4,6 +4,7 @@
 #include "hardware/adc.h"           // Biblioteca de hardware para conversão ADC
 #include "pico/unique_id.h"         // Biblioteca com recursos para trabalhar com os pinos GPIO do Raspberry Pi Pico
 
+float temperature, humidity;
 
 async_at_time_worker_t temp_and_humid_worker = { .do_work = worker_fn };
 
@@ -86,8 +87,6 @@ static void control_led(MQTT_CLIENT_DATA_T *state, bool on) {
 
 // Publicar temperatura
 static void publish_temp_and_humid(MQTT_CLIENT_DATA_T *state) {
-    float temperature, humidity;
-
     const char *temperature_key = full_topic(state, "/temperature");
     const char *humidity_key = full_topic(state, "/humidity");
 

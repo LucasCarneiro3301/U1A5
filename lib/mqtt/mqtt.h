@@ -71,6 +71,8 @@ typedef struct {
 } MQTT_CLIENT_DATA_T;
 
 extern dht_t dht;
+extern float temperature;
+extern float humidity;
 
 #include "mqtt.h"
 #include "pico/async_context.h"

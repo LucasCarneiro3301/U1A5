@@ -21,7 +21,13 @@ add_subdirectory(lib/dht)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(U1A5 U1A5.c lib/cyw43/cyw43.c lib/mqtt/mqtt.c)
+add_executable(U1A5 
+    U1A5.c 
+    lib/cyw43/cyw43.c 
+    lib/mqtt/mqtt.c
+    lib/config/config.c
+    lib/ssd1306/ssd1306.c
+)
 
 pico_set_program_name(U1A5 "U1A5")
 pico_set_program_version(U1A5 "0.1")
@@ -34,6 +40,8 @@ pico_enable_stdio_usb(U1A5 1)
 target_link_libraries(U1A5
     pico_stdlib
     hardware_adc
+    hardware_i2c
+    hardware_pwm
     dht
     pico_cyw43_arch_lwip_threadsafe_background
     pico_lwip_mqtt
