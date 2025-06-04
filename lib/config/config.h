@@ -28,14 +28,12 @@
 #define WS2812_PIN 7    	// Matriz de LEDs 5x5
 #define LDR 28				// Sensor LM35
 
-#define FAN_IN1 16
-#define FAN_IN2 17
-#define FAN_ENA 8
-#define HEAT_RESIST 9
-#define AIR_CONDIT 20
-#define HEATER 19
-#define BTNC 4
-#define BTND 18
+#define FAN_1 4
+#define HEATER 8
+#define REFRIGER 9
+#define FAN_2 20
+#define LIGHT 19
+#define CURTAIN 18
 
 #define NUM_PIXELS 25   	// 5x5 = 25
 #define IS_RGBW false

@@ -48,6 +48,9 @@ add_executable(U1A5
     lib/tasks/ldr_task.c
     lib/tasks/display_task.c
     lib/tasks/mqtt_client_task.c
+    lib/tasks/actuators_task.c
+    lib/tasks/gmf_values.c
+    lib/tasks/led_task.c
 )
 
 pico_set_program_name(U1A5 "U1A5")

@@ -11,13 +11,20 @@
 #include "./lib/tasks/tasks.h"
 
 SemaphoreHandle_t xDisplayMut;     // Mutex para proteger o acesso ao display
-SemaphoreHandle_t xResetSem;       // Semáforo binário usado para sinalizar a tarefa de reset
+SemaphoreHandle_t xStopSem;         // Semáforo binário usado para sinalizar a tarefa de reset
 
 ssd1306_t ssd;
 dht_result_t result;
 float temperature;
 float humidity;
 float lux;
+float q_temp, q_humid, q_lux;
+float quality;
+bool stop = false;
+
+volatile uint32_t last_time = 0;    // Armazena o último tempo em microssegundos
+
+void gpio_irq_handler(uint gpio, uint32_t events);
 
 int main(void) {
     char str[16];
@@ -39,14 +46,31 @@ int main(void) {
         return -1;
     }
 
+
+    gpio_set_irq_enabled_with_callback(BTNA, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);   // Ativa a interrupção do botão de parada na borda de descida
+
     xDisplayMut = xSemaphoreCreateMutex();
-    xResetSem = xSemaphoreCreateBinary();
+    xStopSem = xSemaphoreCreateBinary();
 
     xTaskCreate(vTaskDisplay, "Display Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);           // Exibe temp, umidade, luminosidade e qualidade
     xTaskCreate(vTaskDHT, "DHT Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // Mede temp e umidade
     xTaskCreate(vTaskLDR, "LDR Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // Mede luminosidade
     xTaskCreate(vTaskMQTTClient, "MQTT Client Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);    // Cliente MQTT
+    xTaskCreate(vTaskActuator, "Actuators Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);        // Aciona os atuadores
+    xTaskCreate(vTaskGMF, "GMF Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // Função de pertinência gaussiana nos valores
+    xTaskCreate(vTaskLED, "LED Task", configMINIMAL_STACK_SIZE + 128, NULL, 1, NULL);                   // LEDs de status
 
     vTaskStartScheduler();
     panic_unsupported();
+}
+
+void gpio_irq_handler(uint gpio, uint32_t events) {
+    uint32_t current_time = to_us_since_boot(get_absolute_time());  // Obtém o tempo atual em microssegundos
+
+    if (current_time - last_time > 5e5) {   // 200 ms de debouncing
+        last_time = current_time; 
+        if (gpio == BTNA) {
+            stop = !stop;
+        }
+    }
 }

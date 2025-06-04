@@ -12,12 +12,15 @@
 #define MAX_USERS 25
 
 extern SemaphoreHandle_t xDisplayMut;
-extern SemaphoreHandle_t xResetSem;
+extern SemaphoreHandle_t xStopSem;
 extern ssd1306_t ssd;
 extern dht_result_t result;
 extern float temperature;
 extern float humidity;
 extern float lux;
+extern float q_temp, q_humid, q_lux;
+extern float quality;
+extern bool stop;
 
 // Frequências das notas musicais (em Hz)
 enum Notes {
@@ -37,5 +40,8 @@ void vTaskDisplay(void *params);
 void vTaskDHT(void *params);
 void vTaskMQTTClient(void *params);
 void vTaskLDR(void *params);
+void vTaskGMF(void *params);
+void vTaskActuator(void *params);
+void vTaskLED(void *params);
 
 #endif

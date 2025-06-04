@@ -7,10 +7,6 @@ void btn_setup() {
     gpio_init(BTNA);
     gpio_set_dir(BTNA, GPIO_IN);
     gpio_pull_up(BTNA);
-
-    gpio_init(BTNB);
-    gpio_set_dir(BTNB, GPIO_IN);
-    gpio_pull_up(BTNB);
 }
 
 void output_setup() {
@@ -18,6 +14,18 @@ void output_setup() {
     gpio_set_dir(GREEN, GPIO_OUT);
     gpio_init(RED);
     gpio_set_dir(RED, GPIO_OUT);
+    gpio_init(HEATER);
+    gpio_set_dir(HEATER, GPIO_OUT);
+    gpio_init(REFRIGER);
+    gpio_set_dir(REFRIGER, GPIO_OUT);
+    gpio_init(FAN_1);
+    gpio_set_dir(FAN_1, GPIO_OUT);
+    gpio_init(FAN_2);
+    gpio_set_dir(FAN_2, GPIO_OUT);
+    gpio_init(LIGHT);
+    gpio_set_dir(LIGHT, GPIO_OUT);
+    gpio_init(CURTAIN);
+    gpio_set_dir(CURTAIN, GPIO_OUT);
 }
 
 // Inicializa e configura a comunicação serial I2C 
@@ -57,35 +65,6 @@ void adc_setup() {
     adc_init();
     adc_gpio_init(LDR);
 }
-
-void pwm_setup() {
-    gpio_set_function(FAN_ENA, GPIO_FUNC_PWM);
-    gpio_set_function(HEAT_RESIST, GPIO_FUNC_PWM);
-
-    uint slice_num_1 = pwm_gpio_to_slice_num(FAN_ENA);
-    uint slice_num_2 = pwm_gpio_to_slice_num(HEAT_RESIST);
-
-    uint32_t clock_freq = 125000000;
-    uint32_t pwm_freq = 10000;
-    uint32_t top = 1250;  // wrap = top
-
-    float div = (float)clock_freq / (pwm_freq * (top + 1));
-    pwm_set_clkdiv(slice_num_1, div);
-    pwm_set_clkdiv(slice_num_2, div);
-
-    pwm_set_wrap(slice_num_1, top);
-    pwm_set_wrap(slice_num_2, top);
-
-    pwm_set_chan_level(slice_num_1, PWM_CHAN_B, top / 2); // GPIO 8 → canal B
-    pwm_set_chan_level(slice_num_2, PWM_CHAN_A, top / 2); // GPIO 9 → canal A
-
-    pwm_set_enabled(slice_num_1, true);
-    pwm_set_enabled(slice_num_2, true);
-
-    pwm_set_gpio_level(HEAT_RESIST, 0);
-    pwm_set_gpio_level(FAN_ENA, 0);
-}
-
 
 void init(/*PIO pio, uint sm,*/  ssd1306_t* ssd) {
     stdio_init_all();
