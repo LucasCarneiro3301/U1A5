@@ -21,7 +21,7 @@ __Para este trabalho, os seguintes componentes e ferramentas se fazem necessári
 13) 1 Sensor DHT11
 14) 1 LDR
 
-__O resultado do projeto pode ser assistido através deste link: [Vídeo de Apresentação](https://youtu.be/1CXJDWMVcv0).__
+__O resultado do projeto pode ser assistido através deste link: [Vídeo de Apresentação](https://youtu.be/wSOdHNxdn6Y).__
 
 ## Instruções de Uso
 
